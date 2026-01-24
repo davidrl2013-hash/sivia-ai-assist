@@ -1,0 +1,99 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const systemPrompt = `Você é um assistente clínico especializado em medicina baseada em evidências. Analise o caso clínico apresentado e forneça sugestões estruturadas.
+
+IMPORTANTE: Responda APENAS em formato JSON válido, sem markdown, seguindo exatamente esta estrutura:
+{
+  "diagnosticos": [
+    {"nome": "Nome do diagnóstico", "probabilidade": "Alta/Média/Baixa"}
+  ],
+  "condutas": ["Conduta 1", "Conduta 2"],
+  "exames": ["Exame 1", "Exame 2"],
+  "referencias": ["Referência 1", "Referência 2"]
+}
+
+Regras:
+- Máximo 5 diagnósticos diferenciais, ordenados por probabilidade
+- Condutas imediatas e práticas
+- Exames complementares relevantes
+- Referências de diretrizes brasileiras (MS Brasil, SBC, SBEM, SBD, SBPT, etc.)
+- Seja objetivo e clínico`;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { patientData } = await req.json();
+
+    if (!patientData) {
+      return new Response(
+        JSON.stringify({ error: "Dados do paciente são obrigatórios" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const apiKey = Deno.env.get("VITE_OPENAI_API_KEY");
+    if (!apiKey) {
+      console.error("VITE_OPENAI_API_KEY não configurada");
+      return new Response(
+        JSON.stringify({ error: "Configuração do servidor incompleta" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: patientData },
+        ],
+        temperature: 0.3,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenAI API error:", response.status, errorText);
+      return new Response(
+        JSON.stringify({ error: "Erro ao processar com IA" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      return new Response(
+        JSON.stringify({ error: "Resposta vazia da IA" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const parsed = JSON.parse(content);
+
+    return new Response(JSON.stringify(parsed), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Edge function error:", error);
+    return new Response(
+      JSON.stringify({ error: "Erro interno do servidor" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
