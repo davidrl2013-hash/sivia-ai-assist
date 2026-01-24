@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ClinicalData {
   diagnosticos: Array<{ nome: string; probabilidade: string }>;
@@ -43,16 +44,6 @@ const Index = () => {
       return;
     }
 
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    if (!apiKey) {
-      toast({
-        title: "Configuração necessária",
-        description: "A chave da API OpenAI não está configurada.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsLoading(true);
     setResults(null);
 
@@ -68,56 +59,20 @@ INFORMAÇÕES ADICIONAIS:
 - Condições crônicas: ${condicoes.length > 0 ? condicoes.join(", ") : "Nenhuma informada"}
     `.trim();
 
-    const systemPrompt = `Você é um assistente clínico especializado em medicina baseada em evidências. Analise o caso clínico apresentado e forneça sugestões estruturadas.
-
-IMPORTANTE: Responda APENAS em formato JSON válido, sem markdown, seguindo exatamente esta estrutura:
-{
-  "diagnosticos": [
-    {"nome": "Nome do diagnóstico", "probabilidade": "Alta/Média/Baixa"}
-  ],
-  "condutas": ["Conduta 1", "Conduta 2"],
-  "exames": ["Exame 1", "Exame 2"],
-  "referencias": ["Referência 1", "Referência 2"]
-}
-
-Regras:
-- Máximo 5 diagnósticos diferenciais, ordenados por probabilidade
-- Condutas imediatas e práticas
-- Exames complementares relevantes
-- Referências de diretrizes brasileiras (MS Brasil, SBC, SBEM, SBD, SBPT, etc.)
-- Seja objetivo e clínico`;
-
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: patientData },
-          ],
-          temperature: 0.3,
-          max_tokens: 2000,
-        }),
+      const { data, error } = await supabase.functions.invoke("clinical-suggestions", {
+        body: { patientData },
       });
 
-      if (!response.ok) {
-        throw new Error("Erro na comunicação com a API");
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const data = await response.json();
-      const content = data.choices[0]?.message?.content;
-
-      if (!content) {
-        throw new Error("Resposta vazia da API");
+      if (data.error) {
+        throw new Error(data.error);
       }
 
-      const parsed = JSON.parse(content);
-      setResults(parsed);
+      setResults(data);
     } catch (error) {
       console.error("Erro:", error);
       toast({
