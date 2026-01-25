@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
-import { Header } from "@/components/Header";
+import { useNavigate } from "react-router-dom";
+import { Loader2, Stethoscope, LogOut, ArrowLeft, RotateCcw } from "lucide-react";
 import { TagInput } from "@/components/TagInput";
 import { ClinicalResults } from "@/components/ClinicalResults";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ClinicalData {
@@ -23,8 +24,10 @@ interface ClinicalData {
   referencias: string[];
 }
 
-const Index = () => {
+const Consulta = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
   const [anamnese, setAnamnese] = useState("");
   const [idade, setIdade] = useState("");
   const [sexo, setSexo] = useState("");
@@ -85,11 +88,49 @@ INFORMAÇÕES ADICIONAIS:
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background py-8 px-4 sm:px-6">
-      <div className="max-w-3xl mx-auto">
-        <Header />
+  const handleNewConsultation = () => {
+    setAnamnese("");
+    setIdade("");
+    setSexo("");
+    setAlergias([]);
+    setMedicamentos([]);
+    setCondicoes([]);
+    setResults(null);
+  };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/dashboard")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Voltar
+            </Button>
+            <div className="flex items-center gap-2">
+              <Stethoscope className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-foreground">SIVIA</span>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
+          </Button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
         <div className="space-y-6">
           {/* Textarea principal */}
           <div className="space-y-2">
@@ -173,13 +214,25 @@ INFORMAÇÕES ADICIONAIS:
 
         {/* Resultados */}
         {results && (
-          <div className="mt-10">
+          <div className="mt-10 space-y-6">
             <ClinicalResults results={results} />
+            
+            <div className="flex justify-center pt-4">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleNewConsultation}
+                className="gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Nova Consulta
+              </Button>
+            </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };
 
-export default Index;
+export default Consulta;
