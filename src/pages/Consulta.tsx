@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Stethoscope, LogOut, ArrowLeft, RotateCcw } from "lucide-react";
 import { TagInput } from "@/components/TagInput";
 import { ClinicalResults } from "@/components/ClinicalResults";
+import { PdfExportButton } from "@/components/PdfExportButton";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -27,7 +28,7 @@ interface ClinicalData {
 const Consulta = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [anamnese, setAnamnese] = useState("");
   const [idade, setIdade] = useState("");
   const [sexo, setSexo] = useState("");
@@ -36,6 +37,24 @@ const Consulta = () => {
   const [condicoes, setCondicoes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<ClinicalData | null>(null);
+  const [doctorName, setDoctorName] = useState("Médico");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user.id)
+          .single();
+        
+        if (data) {
+          setDoctorName(data.full_name);
+        }
+      }
+    };
+    fetchProfile();
+  }, [user]);
 
   const handleSubmit = async () => {
     if (!anamnese.trim()) {
@@ -217,14 +236,26 @@ INFORMAÇÕES ADICIONAIS:
           <div className="mt-10 space-y-6">
             <ClinicalResults results={results} />
             
-            <div className="flex justify-center pt-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+              <PdfExportButton
+                patientData={{
+                  anamnese,
+                  idade,
+                  sexo,
+                  alergias,
+                  medicamentos,
+                  condicoes,
+                }}
+                results={results}
+                doctorName={doctorName}
+              />
               <Button
                 variant="outline"
                 size="lg"
                 onClick={handleNewConsultation}
-                className="gap-2"
+                className="gap-2 text-base font-semibold"
               >
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw className="h-5 w-5" />
                 Nova Consulta
               </Button>
             </div>
