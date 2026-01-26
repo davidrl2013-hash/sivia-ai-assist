@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Stethoscope, LogOut, Loader2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useConsultations } from "@/hooks/useConsultations";
 import { ConsultationHistory } from "@/components/ConsultationHistory";
@@ -47,7 +48,7 @@ const Dashboard = () => {
             <Stethoscope className="h-6 w-6 text-primary" />
             <span className="text-xl font-bold text-foreground">SIVIA</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {loadingProfile ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             ) : (
@@ -55,6 +56,7 @@ const Dashboard = () => {
                 {displayName}
               </span>
             )}
+            <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sair

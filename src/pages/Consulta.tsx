@@ -4,6 +4,7 @@ import { Loader2, Stethoscope, LogOut, ArrowLeft, RotateCcw } from "lucide-react
 import { TagInput } from "@/components/TagInput";
 import { ClinicalResults } from "@/components/ClinicalResults";
 import { PdfExportButton } from "@/components/PdfExportButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -157,10 +158,13 @@ INFORMAÇÕES ADICIONAIS:
               <span className="font-semibold text-foreground">SIVIA</span>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </Button>
+          </div>
         </div>
       </header>
 
