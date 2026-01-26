@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Stethoscope, LogOut, Loader2 } from "lucide-react";
+import { Stethoscope, LogOut, Loader2, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useConsultations } from "@/hooks/useConsultations";
+import { ConsultationHistory } from "@/components/ConsultationHistory";
 import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
@@ -10,6 +12,7 @@ const Dashboard = () => {
   const { user, signOut } = useAuth();
   const [fullName, setFullName] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const { consultations, loading: loadingConsultations, deleteConsultation } = useConsultations();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -83,6 +86,21 @@ const Dashboard = () => {
             <Stethoscope className="mr-2 h-5 w-5" />
             Iniciar Nova Consulta
           </Button>
+
+          {/* History Section */}
+          <div className="mt-12 text-left">
+            <div className="flex items-center gap-2 mb-4">
+              <History className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-foreground">
+                Histórico de Consultas
+              </h2>
+            </div>
+            <ConsultationHistory
+              consultations={consultations}
+              onDelete={deleteConsultation}
+              loading={loadingConsultations}
+            />
+          </div>
         </div>
       </main>
     </div>
