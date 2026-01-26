@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      consultations: {
+        Row: {
+          alergias: string[] | null
+          anamnese: string
+          condicoes: string[] | null
+          condutas: string[] | null
+          created_at: string
+          diagnosticos: Json
+          exames: string[] | null
+          id: string
+          idade: string | null
+          medicamentos: string[] | null
+          referencias: string[] | null
+          sexo: string | null
+          user_id: string
+        }
+        Insert: {
+          alergias?: string[] | null
+          anamnese: string
+          condicoes?: string[] | null
+          condutas?: string[] | null
+          created_at?: string
+          diagnosticos?: Json
+          exames?: string[] | null
+          id?: string
+          idade?: string | null
+          medicamentos?: string[] | null
+          referencias?: string[] | null
+          sexo?: string | null
+          user_id: string
+        }
+        Update: {
+          alergias?: string[] | null
+          anamnese?: string
+          condicoes?: string[] | null
+          condutas?: string[] | null
+          created_at?: string
+          diagnosticos?: Json
+          exames?: string[] | null
+          id?: string
+          idade?: string | null
+          medicamentos?: string[] | null
+          referencias?: string[] | null
+          sexo?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

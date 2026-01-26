@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useConsultations } from "@/hooks/useConsultations";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ClinicalData {
@@ -29,6 +30,7 @@ const Consulta = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signOut, user } = useAuth();
+  const { saveConsultation } = useConsultations();
   const [anamnese, setAnamnese] = useState("");
   const [idade, setIdade] = useState("");
   const [sexo, setSexo] = useState("");
@@ -95,6 +97,20 @@ INFORMAÇÕES ADICIONAIS:
       }
 
       setResults(data);
+
+      // Save consultation to history
+      await saveConsultation({
+        anamnese,
+        idade,
+        sexo,
+        alergias,
+        medicamentos,
+        condicoes,
+        diagnosticos: data.diagnosticos,
+        condutas: data.condutas,
+        exames: data.exames,
+        referencias: data.referencias,
+      });
     } catch (error) {
       console.error("Erro:", error);
       toast({
