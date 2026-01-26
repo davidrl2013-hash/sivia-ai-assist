@@ -38,9 +38,9 @@ export function ClinicalResults({ results }: ClinicalResultsProps) {
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6 animate-fade-in">
       {/* Disclaimer */}
-      <div className="flex items-start gap-3 p-4 rounded-lg bg-yellow-50 border border-yellow-200">
-        <AlertTriangle className="h-5 w-5 text-yellow-600 shrink-0 mt-0.5" />
-        <p className="text-sm text-yellow-800">
+      <div className="flex items-start gap-3 p-4 rounded-lg bg-warning-background border border-warning/30">
+        <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+        <p className="text-sm text-warning-foreground">
           <strong>Atenção:</strong> Estas são sugestões geradas por IA. Não substituem o julgamento clínico do médico. 
           Valide sempre as informações e considere o contexto completo do paciente.
         </p>
