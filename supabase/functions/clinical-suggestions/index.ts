@@ -6,7 +6,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const systemPrompt = `Você é um assistente clínico especializado em medicina baseada em evidências. Analise o caso clínico apresentado e forneça sugestões estruturadas.
+const analyzePrompt = `Você é um assistente clínico. Analise a anamnese fornecida e verifique se há dados essenciais faltando para uma avaliação clínica precisa.
+
+Dados essenciais a verificar:
+- Idade do paciente
+- Sexo do paciente  
+- Queixa principal clara
+- Duração dos sintomas
+- Sinais vitais (se aplicável ao caso)
+- Alergias medicamentosas
+- Medicamentos em uso
+- Comorbidades relevantes
+- Sinais de alarme específicos para a queixa
+
+Se faltar dados importantes, gere de 3 a 5 perguntas CLARAS e ESPECÍFICAS para esclarecer.
+
+RESPONDA APENAS em JSON válido:
+{
+  "needsClarification": true/false,
+  "questions": ["Pergunta 1?", "Pergunta 2?", ...]
+}
+
+Se todos os dados essenciais estiverem presentes, retorne:
+{"needsClarification": false, "questions": []}`;
+
+const generatePrompt = `Você é um assistente clínico especializado em medicina baseada em evidências. Analise o caso clínico apresentado e forneça sugestões estruturadas.
 
 EXTRAÇÃO DE DADOS: O texto fornecido contém a anamnese completa. Você DEVE extrair automaticamente:
 - Alergias mencionadas no texto
@@ -37,9 +61,8 @@ Regras:
 - Máximo 5 diagnósticos diferenciais, ordenados por probabilidade
 - Condutas imediatas e práticas
 - Exames complementares relevantes
-- Prescrições: inclua medicamentos sintomáticos apropriados para a queixa principal (analgésicos, antitérmicos, antieméticos, etc.)
-- Para cada medicamento, especifique: nome comercial/genérico, apresentação, posologia detalhada, duração do tratamento e orientações de uso
-- EVITE medicamentos que conflitem com alergias ou medicamentos em uso extraídos do texto
+- Prescrições: inclua medicamentos sintomáticos apropriados para a queixa principal
+- EVITE medicamentos que conflitem com alergias ou medicamentos em uso
 - Referências de diretrizes brasileiras (MS Brasil, SBC, SBEM, SBD, SBPT, etc.)
 - Seja objetivo e clínico`;
 
@@ -75,13 +98,25 @@ serve(async (req) => {
       );
     }
 
-    const { patientData } = await req.json();
+    const { patientData, phase, clarificationAnswers } = await req.json();
 
     if (!patientData) {
       return new Response(
         JSON.stringify({ error: "Dados do paciente são obrigatórios" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Determine which prompt to use based on phase
+    const isAnalyzePhase = phase === "analyze";
+    const systemPrompt = isAnalyzePhase ? analyzePrompt : generatePrompt;
+    
+    // Build the user content
+    let userContent = patientData;
+    if (!isAnalyzePhase && clarificationAnswers && clarificationAnswers.length > 0) {
+      userContent += "\n\nRESPOSTAS ADICIONAIS DO MÉDICO:\n" + clarificationAnswers.map((a: {question: string, answer: string}, i: number) => 
+        `${i + 1}. ${a.question}\nResposta: ${a.answer}`
+      ).join("\n\n");
     }
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
@@ -103,10 +138,10 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: patientData },
+          { role: "user", content: userContent },
         ],
         temperature: 0.3,
-        max_tokens: 2000,
+        max_tokens: isAnalyzePhase ? 500 : 2000,
       }),
     });
 
