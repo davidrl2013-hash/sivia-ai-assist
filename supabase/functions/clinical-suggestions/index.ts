@@ -15,6 +15,15 @@ IMPORTANTE: Responda APENAS em formato JSON válido, sem markdown, seguindo exat
   ],
   "condutas": ["Conduta 1", "Conduta 2"],
   "exames": ["Exame 1", "Exame 2"],
+  "prescricoes": [
+    {
+      "medicamento": "Nome do medicamento",
+      "apresentacao": "Comprimido 500mg, Xarope 100mg/5ml, etc.",
+      "posologia": "1 comprimido de 8/8 horas",
+      "duracao": "5 dias",
+      "orientacoes": "Tomar após as refeições. Evitar bebidas alcoólicas."
+    }
+  ],
   "referencias": ["Referência 1", "Referência 2"]
 }
 
@@ -22,6 +31,9 @@ Regras:
 - Máximo 5 diagnósticos diferenciais, ordenados por probabilidade
 - Condutas imediatas e práticas
 - Exames complementares relevantes
+- Prescrições: inclua medicamentos sintomáticos apropriados para a queixa principal (analgésicos, antitérmicos, antieméticos, etc.)
+- Para cada medicamento, especifique: nome comercial/genérico, apresentação, posologia detalhada, duração do tratamento e orientações de uso
+- Considere alergias e medicamentos em uso informados para evitar interações
 - Referências de diretrizes brasileiras (MS Brasil, SBC, SBEM, SBD, SBPT, etc.)
 - Seja objetivo e clínico`;
 

@@ -1,12 +1,21 @@
-import { AlertTriangle, Stethoscope, Activity, FlaskConical, BookOpen } from "lucide-react";
+import { AlertTriangle, Stethoscope, Activity, FlaskConical, BookOpen, Pill } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
+interface Prescricao {
+  medicamento: string;
+  apresentacao: string;
+  posologia: string;
+  duracao: string;
+  orientacoes: string;
+}
 
 interface ClinicalResultsProps {
   results: {
     diagnosticos: Array<{ nome: string; probabilidade: string }>;
     condutas: string[];
     exames: string[];
+    prescricoes?: Prescricao[];
     referencias: string[];
   };
 }
@@ -125,6 +134,54 @@ export function ClinicalResults({ results }: ClinicalResultsProps) {
           </ul>
         </CardContent>
       </Card>
+
+      {/* Prescrições Medicamentosas */}
+      {results.prescricoes && results.prescricoes.length > 0 && (
+        <Card className="border-l-4 border-l-orange-500 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Pill className="h-5 w-5 text-orange-500" />
+              Prescrição Medicamentosa
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {results.prescricoes.map((prescricao, index) => (
+                <div key={index} className="p-4 rounded-lg bg-muted/30 border border-border/50">
+                  <div className="flex items-start gap-3">
+                    <span className="flex items-center justify-center h-7 w-7 rounded-full bg-orange-500 text-white text-sm font-bold shrink-0">
+                      {index + 1}
+                    </span>
+                    <div className="flex-1 space-y-2">
+                      <h4 className="font-semibold text-foreground">
+                        {extractString(prescricao.medicamento)}
+                      </h4>
+                      <div className="grid gap-1 text-sm">
+                        <p>
+                          <span className="font-medium text-muted-foreground">Apresentação:</span>{" "}
+                          {extractString(prescricao.apresentacao)}
+                        </p>
+                        <p>
+                          <span className="font-medium text-muted-foreground">Posologia:</span>{" "}
+                          {extractString(prescricao.posologia)}
+                        </p>
+                        <p>
+                          <span className="font-medium text-muted-foreground">Duração:</span>{" "}
+                          {extractString(prescricao.duracao)}
+                        </p>
+                        <p className="mt-2 p-2 bg-background rounded border border-border/30">
+                          <span className="font-medium text-muted-foreground">Orientações:</span>{" "}
+                          {extractString(prescricao.orientacoes)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Referências */}
       <Card className="border-l-4 border-l-purple-500 shadow-sm">

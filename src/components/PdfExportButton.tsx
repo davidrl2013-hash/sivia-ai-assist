@@ -12,10 +12,19 @@ interface PatientData {
   condicoes: string[];
 }
 
+interface Prescricao {
+  medicamento: string;
+  apresentacao: string;
+  posologia: string;
+  duracao: string;
+  orientacoes: string;
+}
+
 interface ClinicalData {
   diagnosticos: Array<{ nome: string; probabilidade: string }>;
   condutas: string[];
   exames: string[];
+  prescricoes?: Prescricao[];
   referencias: string[];
 }
 
@@ -147,6 +156,38 @@ export function PdfExportButton({ patientData, results, doctorName }: PdfExportB
       yPosition += 6;
 
       checkPageOverflow();
+
+      // Prescrições Section
+      if (results.prescricoes && results.prescricoes.length > 0) {
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("PRESCRIÇÃO MEDICAMENTOSA", margin, yPosition);
+        yPosition += 8;
+
+        doc.setFontSize(10);
+        results.prescricoes.forEach((prescricao, index) => {
+          checkPageOverflow();
+          
+          doc.setFont("helvetica", "bold");
+          doc.text(`${index + 1}. ${prescricao.medicamento}`, margin + 4, yPosition);
+          yPosition += 6;
+          
+          doc.setFont("helvetica", "normal");
+          doc.text(`   Apresentação: ${prescricao.apresentacao}`, margin + 4, yPosition);
+          yPosition += 5;
+          doc.text(`   Posologia: ${prescricao.posologia}`, margin + 4, yPosition);
+          yPosition += 5;
+          doc.text(`   Duração: ${prescricao.duracao}`, margin + 4, yPosition);
+          yPosition += 5;
+          
+          const orientLines = doc.splitTextToSize(`   Orientações: ${prescricao.orientacoes}`, contentWidth - 8);
+          doc.text(orientLines, margin + 4, yPosition);
+          yPosition += orientLines.length * 5 + 4;
+        });
+        yPosition += 6;
+
+        checkPageOverflow();
+      }
 
       // Referências Section
       doc.setFontSize(12);
