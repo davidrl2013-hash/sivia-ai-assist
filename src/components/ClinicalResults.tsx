@@ -35,6 +35,19 @@ export function ClinicalResults({ results }: ClinicalResultsProps) {
     );
   };
 
+  // Helper to extract string from potentially nested object
+  const extractString = (item: unknown): string => {
+    if (typeof item === "string") return item;
+    if (typeof item === "object" && item !== null) {
+      // Handle objects like {conduta: "..."} or {exame: "..."}
+      const values = Object.values(item);
+      if (values.length > 0 && typeof values[0] === "string") {
+        return values[0];
+      }
+    }
+    return String(item);
+  };
+
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6 animate-fade-in">
       {/* Disclaimer */}
@@ -86,7 +99,7 @@ export function ClinicalResults({ results }: ClinicalResultsProps) {
             {results.condutas.map((conduta, index) => (
               <li key={index} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
                 <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0 mt-2" />
-                <span>{conduta}</span>
+                <span>{extractString(conduta)}</span>
               </li>
             ))}
           </ul>
@@ -106,7 +119,7 @@ export function ClinicalResults({ results }: ClinicalResultsProps) {
             {results.exames.map((exame, index) => (
               <li key={index} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 mt-2" />
-                <span>{exame}</span>
+                <span>{extractString(exame)}</span>
               </li>
             ))}
           </ul>
@@ -126,7 +139,7 @@ export function ClinicalResults({ results }: ClinicalResultsProps) {
             {results.referencias.map((ref, index) => (
               <li key={index} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/30 transition-colors">
                 <span className="h-2 w-2 rounded-full bg-purple-500 shrink-0 mt-2" />
-                <span className="text-sm text-muted-foreground">{ref}</span>
+                <span className="text-sm text-muted-foreground">{extractString(ref)}</span>
               </li>
             ))}
           </ul>
