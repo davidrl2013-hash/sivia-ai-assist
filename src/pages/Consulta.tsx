@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Stethoscope, LogOut, ArrowLeft, RotateCcw } from "lucide-react";
-import { TagInput } from "@/components/TagInput";
 import { ClinicalResults } from "@/components/ClinicalResults";
 import { PdfExportButton } from "@/components/PdfExportButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -35,9 +34,6 @@ const Consulta = () => {
   const [anamnese, setAnamnese] = useState("");
   const [idade, setIdade] = useState("");
   const [sexo, setSexo] = useState("");
-  const [alergias, setAlergias] = useState<string[]>([]);
-  const [medicamentos, setMedicamentos] = useState<string[]>([]);
-  const [condicoes, setCondicoes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<ClinicalData | null>(null);
   const [doctorName, setDoctorName] = useState("Médico");
@@ -77,11 +73,8 @@ ANAMNESE E DADOS CLÍNICOS:
 ${anamnese}
 
 INFORMAÇÕES ADICIONAIS:
-- Idade: ${idade || "Não informada"}
-- Sexo: ${sexo || "Não informado"}
-- Alergias: ${alergias.length > 0 ? alergias.join(", ") : "Nenhuma informada"}
-- Medicamentos em uso: ${medicamentos.length > 0 ? medicamentos.join(", ") : "Nenhum informado"}
-- Condições crônicas: ${condicoes.length > 0 ? condicoes.join(", ") : "Nenhuma informada"}
+- Idade: ${idade || "Extrair do texto"}
+- Sexo: ${sexo || "Extrair do texto"}
     `.trim();
 
     try {
@@ -104,9 +97,9 @@ INFORMAÇÕES ADICIONAIS:
         anamnese,
         idade,
         sexo,
-        alergias,
-        medicamentos,
-        condicoes,
+        alergias: [],
+        medicamentos: [],
+        condicoes: [],
         diagnosticos: data.diagnosticos,
         condutas: data.condutas,
         exames: data.exames,
@@ -128,9 +121,6 @@ INFORMAÇÕES ADICIONAIS:
     setAnamnese("");
     setIdade("");
     setSexo("");
-    setAlergias([]);
-    setMedicamentos([]);
-    setCondicoes([]);
     setResults(null);
   };
 
@@ -176,7 +166,7 @@ INFORMAÇÕES ADICIONAIS:
             <Textarea
               value={anamnese}
               onChange={(e) => setAnamnese(e.target.value)}
-              placeholder="Cole aqui a anamnese completa, sinais vitais, exame físico, idade, sexo, alergias, medicamentos em uso, condições crônicas e qualquer outro dado relevante do paciente..."
+              placeholder="Inicie com iniciais e idade do paciente (ex: M.S.L., 61 anos). Depois, cole a anamnese completa, sinais vitais, exame físico, alergias, medicamentos em uso, condições crônicas e outros dados relevantes. A IA extrairá tudo automaticamente."
               className="min-h-[180px] text-base resize-y"
             />
           </div>
@@ -210,26 +200,6 @@ INFORMAÇÕES ADICIONAIS:
             </div>
           </div>
 
-          <TagInput
-            label="Alergias"
-            placeholder="Digite uma alergia e pressione Enter"
-            tags={alergias}
-            onTagsChange={setAlergias}
-          />
-
-          <TagInput
-            label="Medicamentos em uso"
-            placeholder="Digite um medicamento e pressione Enter"
-            tags={medicamentos}
-            onTagsChange={setMedicamentos}
-          />
-
-          <TagInput
-            label="Condições crônicas"
-            placeholder="Digite uma condição e pressione Enter"
-            tags={condicoes}
-            onTagsChange={setCondicoes}
-          />
 
           {/* Botão de ação */}
           <div className="pt-4">
@@ -262,9 +232,9 @@ INFORMAÇÕES ADICIONAIS:
                   anamnese,
                   idade,
                   sexo,
-                  alergias,
-                  medicamentos,
-                  condicoes,
+                  alergias: [],
+                  medicamentos: [],
+                  condicoes: [],
                 }}
                 results={results}
                 doctorName={doctorName}
