@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Stethoscope, LogOut, ArrowLeft, RotateCcw } from "lucide-react";
+import { Loader2, Stethoscope, LogOut, ArrowLeft, RotateCcw, HelpCircle, Send } from "lucide-react";
 import { ClinicalResults } from "@/components/ClinicalResults";
 import { PdfExportButton } from "@/components/PdfExportButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -26,6 +26,11 @@ interface ClinicalData {
   referencias: string[];
 }
 
+interface ClarificationQuestion {
+  question: string;
+  answer: string;
+}
+
 const Consulta = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -37,6 +42,10 @@ const Consulta = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<ClinicalData | null>(null);
   const [doctorName, setDoctorName] = useState("Médico");
+  
+  // Clarification flow states
+  const [clarificationQuestions, setClarificationQuestions] = useState<ClarificationQuestion[]>([]);
+  const [showClarification, setShowClarification] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -55,6 +64,17 @@ const Consulta = () => {
     fetchProfile();
   }, [user]);
 
+  const buildPatientData = () => {
+    return `
+ANAMNESE E DADOS CLÍNICOS:
+${anamnese}
+
+INFORMAÇÕES ADICIONAIS:
+- Idade: ${idade || "Extrair do texto"}
+- Sexo: ${sexo || "Extrair do texto"}
+    `.trim();
+  };
+
   const handleSubmit = async () => {
     if (!anamnese.trim()) {
       toast({
@@ -67,19 +87,58 @@ const Consulta = () => {
 
     setIsLoading(true);
     setResults(null);
+    setClarificationQuestions([]);
+    setShowClarification(false);
 
-    const patientData = `
-ANAMNESE E DADOS CLÍNICOS:
-${anamnese}
-
-INFORMAÇÕES ADICIONAIS:
-- Idade: ${idade || "Extrair do texto"}
-- Sexo: ${sexo || "Extrair do texto"}
-    `.trim();
+    const patientData = buildPatientData();
 
     try {
+      // Phase 1: Analyze for missing data
+      const { data: analyzeData, error: analyzeError } = await supabase.functions.invoke("clinical-suggestions", {
+        body: { patientData, phase: "analyze" },
+      });
+
+      if (analyzeError) {
+        throw new Error(analyzeError.message);
+      }
+
+      if (analyzeData.error) {
+        throw new Error(analyzeData.error);
+      }
+
+      // Check if clarification is needed
+      if (analyzeData.needsClarification && analyzeData.questions?.length > 0) {
+        const questions = analyzeData.questions.map((q: string) => ({
+          question: q,
+          answer: "",
+        }));
+        setClarificationQuestions(questions);
+        setShowClarification(true);
+        setIsLoading(false);
+        return;
+      }
+
+      // If no clarification needed, generate final results
+      await generateFinalResults(patientData, []);
+    } catch (error) {
+      console.error("Erro:", error);
+      toast({
+        title: "Erro ao processar",
+        description: "Não foi possível analisar o caso clínico. Tente novamente.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  };
+
+  const generateFinalResults = async (patientData: string, answers: ClarificationQuestion[]) => {
+    try {
       const { data, error } = await supabase.functions.invoke("clinical-suggestions", {
-        body: { patientData },
+        body: { 
+          patientData, 
+          phase: "generate",
+          clarificationAnswers: answers.length > 0 ? answers : undefined,
+        },
       });
 
       if (error) {
@@ -91,6 +150,8 @@ INFORMAÇÕES ADICIONAIS:
       }
 
       setResults(data);
+      setShowClarification(false);
+      setClarificationQuestions([]);
 
       // Save consultation to history
       await saveConsultation({
@@ -117,11 +178,41 @@ INFORMAÇÕES ADICIONAIS:
     }
   };
 
+  const handleContinueWithAnswers = async () => {
+    const unanswered = clarificationQuestions.filter(q => !q.answer.trim());
+    if (unanswered.length > 0) {
+      toast({
+        title: "Respostas incompletas",
+        description: "Por favor, responda todas as perguntas antes de continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const patientData = buildPatientData();
+    await generateFinalResults(patientData, clarificationQuestions);
+  };
+
+  const handleSkipClarification = async () => {
+    setIsLoading(true);
+    const patientData = buildPatientData();
+    await generateFinalResults(patientData, []);
+  };
+
+  const updateAnswer = (index: number, answer: string) => {
+    setClarificationQuestions(prev => 
+      prev.map((q, i) => i === index ? { ...q, answer } : q)
+    );
+  };
+
   const handleNewConsultation = () => {
     setAnamnese("");
     setIdade("");
     setSexo("");
     setResults(null);
+    setClarificationQuestions([]);
+    setShowClarification(false);
   };
 
   const handleSignOut = async () => {
@@ -168,6 +259,7 @@ INFORMAÇÕES ADICIONAIS:
               onChange={(e) => setAnamnese(e.target.value)}
               placeholder="Inicie com iniciais e idade do paciente (ex: M.S.L., 61 anos). Depois, cole a anamnese completa, sinais vitais, exame físico, alergias, medicamentos em uso, condições crônicas e outros dados relevantes. A IA extrairá tudo automaticamente."
               className="min-h-[180px] text-base resize-y"
+              disabled={showClarification}
             />
           </div>
 
@@ -182,12 +274,13 @@ INFORMAÇÕES ADICIONAIS:
                 placeholder="Ex: 45"
                 min="0"
                 max="150"
+                disabled={showClarification}
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Sexo</label>
-              <Select value={sexo} onValueChange={setSexo}>
+              <Select value={sexo} onValueChange={setSexo} disabled={showClarification}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
@@ -200,25 +293,82 @@ INFORMAÇÕES ADICIONAIS:
             </div>
           </div>
 
+          {/* Clarification Questions */}
+          {showClarification && clarificationQuestions.length > 0 && (
+            <div className="border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 rounded-lg p-4 space-y-4">
+              <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                <HelpCircle className="h-5 w-5" />
+                <span className="font-medium">Precisamos de mais informações</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Responda as perguntas abaixo para gerar sugestões mais precisas:
+              </p>
+              
+              <div className="space-y-4">
+                {clarificationQuestions.map((q, index) => (
+                  <div key={index} className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      {index + 1}. {q.question}
+                    </label>
+                    <Input
+                      value={q.answer}
+                      onChange={(e) => updateAnswer(index, e.target.value)}
+                      placeholder="Digite sua resposta..."
+                      className="bg-background"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={handleContinueWithAnswers}
+                  disabled={isLoading}
+                  className="flex-1"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Continuar
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleSkipClarification}
+                  disabled={isLoading}
+                >
+                  Pular
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Botão de ação */}
-          <div className="pt-4">
-            <Button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              size="lg"
-              className="w-full text-base font-semibold py-6"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Analisando caso clínico...
-                </>
-              ) : (
-                "Gerar Sugestões Clínicas"
-              )}
-            </Button>
-          </div>
+          {!showClarification && (
+            <div className="pt-4">
+              <Button
+                onClick={handleSubmit}
+                disabled={isLoading}
+                size="lg"
+                className="w-full text-base font-semibold py-6"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Analisando caso clínico...
+                  </>
+                ) : (
+                  "Gerar Sugestões Clínicas"
+                )}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Resultados */}
