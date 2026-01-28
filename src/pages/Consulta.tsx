@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Loader2, Stethoscope, LogOut, ArrowLeft, RotateCcw, HelpCircle, Send } from "lucide-react";
 import { ClinicalResults } from "@/components/ClinicalResults";
 import { PdfExportButton } from "@/components/PdfExportButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ConsultationModeSelector, ConsultationMode } from "@/components/ConsultationModeSelector";
+import { OccupationalExamForm } from "@/components/OccupationalExamForm";
+import { OccupationalExamType, examTypeLabels } from "@/types/occupational";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -23,6 +26,13 @@ interface ClinicalData {
   diagnosticos: Array<{ nome: string; probabilidade: string }>;
   condutas: string[];
   exames: string[];
+  prescricoes?: Array<{
+    medicamento: string;
+    apresentacao: string;
+    posologia: string;
+    duracao: string;
+    orientacoes: string;
+  }>;
   referencias: string[];
 }
 
@@ -31,17 +41,40 @@ interface ClarificationQuestion {
   answer: string;
 }
 
+interface LocationState {
+  prefillData?: {
+    iniciais: string;
+    idade: string;
+    sexo: string;
+    anamnese: string;
+  };
+  mode?: ConsultationMode;
+}
+
 const Consulta = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { signOut, user } = useAuth();
   const { saveConsultation } = useConsultations();
-  const [anamnese, setAnamnese] = useState("");
-  const [idade, setIdade] = useState("");
-  const [sexo, setSexo] = useState("");
+  
+  // Get pre-filled data and mode from navigation state
+  const locationState = location.state as LocationState | undefined;
+  
+  const [anamnese, setAnamnese] = useState(locationState?.prefillData?.anamnese || "");
+  const [idade, setIdade] = useState(locationState?.prefillData?.idade || "");
+  const [sexo, setSexo] = useState(locationState?.prefillData?.sexo || "");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<ClinicalData | null>(null);
   const [doctorName, setDoctorName] = useState("Médico");
+  
+  // Consultation mode
+  const [consultationMode, setConsultationMode] = useState<ConsultationMode>(
+    locationState?.mode || "normal"
+  );
+  
+  // Occupational mode specific state
+  const [selectedOccupationalExam, setSelectedOccupationalExam] = useState<OccupationalExamType | null>(null);
   
   // Clarification flow states
   const [clarificationQuestions, setClarificationQuestions] = useState<ClarificationQuestion[]>([]);
@@ -54,7 +87,7 @@ const Consulta = () => {
           .from("profiles")
           .select("full_name")
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         
         if (data) {
           setDoctorName(data.full_name);
@@ -95,7 +128,7 @@ INFORMAÇÕES ADICIONAIS:
     try {
       // Phase 1: Analyze for missing data
       const { data: analyzeData, error: analyzeError } = await supabase.functions.invoke("clinical-suggestions", {
-        body: { patientData, phase: "analyze" },
+        body: { patientData, phase: "analyze", mode: consultationMode },
       });
 
       if (analyzeError) {
@@ -137,6 +170,7 @@ INFORMAÇÕES ADICIONAIS:
         body: { 
           patientData, 
           phase: "generate",
+          mode: consultationMode,
           clarificationAnswers: answers.length > 0 ? answers : undefined,
         },
       });
@@ -213,12 +247,103 @@ INFORMAÇÕES ADICIONAIS:
     setResults(null);
     setClarificationQuestions([]);
     setShowClarification(false);
+    setSelectedOccupationalExam(null);
   };
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/login");
   };
+
+  // If occupational mode with a selected exam type, show the form
+  if (consultationMode === "occupational" && selectedOccupationalExam) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Stethoscope className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-foreground">SIVIA</span>
+              <span className="text-sm text-muted-foreground">• Medicina Ocupacional</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </div>
+          </div>
+        </header>
+        <main className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
+          <OccupationalExamForm
+            examType={selectedOccupationalExam}
+            onBack={() => setSelectedOccupationalExam(null)}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  // If occupational mode without selected exam, show exam type selection
+  if (consultationMode === "occupational" && !selectedOccupationalExam) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/dashboard")}
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Voltar
+              </Button>
+              <div className="flex items-center gap-2">
+                <Stethoscope className="h-5 w-5 text-primary" />
+                <span className="font-semibold text-foreground">SIVIA</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </div>
+          </div>
+        </header>
+        <main className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
+          <div className="text-center space-y-6">
+            <h1 className="text-2xl font-bold">Medicina Ocupacional</h1>
+            <p className="text-muted-foreground">Selecione o tipo de exame ocupacional</p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg mx-auto">
+              {(Object.entries(examTypeLabels) as [OccupationalExamType, string][]).map(([type, label]) => (
+                <Button
+                  key={type}
+                  variant="outline"
+                  className="h-auto py-4 px-6 flex flex-col gap-1"
+                  onClick={() => setSelectedOccupationalExam(type)}
+                >
+                  <span className="font-semibold">{label}</span>
+                  <span className="text-xs text-muted-foreground">NR-7 PCMSO</span>
+                </Button>
+              ))}
+            </div>
+
+            <div className="pt-4">
+              <ConsultationModeSelector
+                mode={consultationMode}
+                onModeChange={setConsultationMode}
+              />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -252,12 +377,23 @@ INFORMAÇÕES ADICIONAIS:
       {/* Main Content */}
       <main className="max-w-3xl mx-auto py-8 px-4 sm:px-6">
         <div className="space-y-6">
+          {/* Mode Selector */}
+          <ConsultationModeSelector
+            mode={consultationMode}
+            onModeChange={setConsultationMode}
+            disabled={showClarification || isLoading}
+          />
+
           {/* Textarea principal */}
           <div className="space-y-2">
             <Textarea
               value={anamnese}
               onChange={(e) => setAnamnese(e.target.value)}
-              placeholder="Inicie com iniciais e idade do paciente (ex: M.S.L., 61 anos). Depois, cole a anamnese completa, sinais vitais, exame físico, alergias, medicamentos em uso, condições crônicas e outros dados relevantes. A IA extrairá tudo automaticamente."
+              placeholder={
+                consultationMode === "emergency" 
+                  ? "Descreva a emergência: queixa principal, sinais vitais, nível de consciência, vias aéreas, respiração, circulação (ABCDE). A IA priorizará condutas imediatas."
+                  : "Inicie com iniciais e idade do paciente (ex: M.S.L., 61 anos). Depois, cole a anamnese completa, sinais vitais, exame físico, alergias, medicamentos em uso, condições crônicas e outros dados relevantes. A IA extrairá tudo automaticamente."
+              }
               className="min-h-[180px] text-base resize-y"
               disabled={showClarification}
             />

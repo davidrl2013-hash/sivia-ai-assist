@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Stethoscope, LogOut, Loader2, History } from "lucide-react";
+import { Stethoscope, LogOut, Loader2, History, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import { useConsultations } from "@/hooks/useConsultations";
 import { ConsultationHistory } from "@/components/ConsultationHistory";
+import { PatientReceptionModal } from "@/components/PatientReceptionModal";
+import { ConsultationModeSelector, ConsultationMode } from "@/components/ConsultationModeSelector";
 import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
@@ -14,6 +16,9 @@ const Dashboard = () => {
   const [fullName, setFullName] = useState<string | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const { consultations, loading: loadingConsultations, deleteConsultation } = useConsultations();
+  
+  const [showReceptionModal, setShowReceptionModal] = useState(false);
+  const [consultationMode, setConsultationMode] = useState<ConsultationMode>("normal");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -35,6 +40,29 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate("/login");
+  };
+
+  const handlePatientDataExtracted = (data: {
+    iniciais: string;
+    idade: string;
+    sexo: string;
+    anamnese: string;
+  }) => {
+    // Navigate to consultation with pre-filled data
+    navigate("/consulta", { 
+      state: { 
+        prefillData: data,
+        mode: consultationMode,
+      } 
+    });
+  };
+
+  const handleQuickConsulta = () => {
+    if (consultationMode === "occupational") {
+      navigate("/consulta", { state: { mode: "occupational" } });
+    } else {
+      setShowReceptionModal(true);
+    }
   };
 
   const displayName = fullName || user?.email?.split("@")[0] || "Usuário";
@@ -79,14 +107,22 @@ const Dashboard = () => {
             </p>
           </div>
 
+          {/* Mode Selector */}
+          <div className="max-w-sm mx-auto">
+            <ConsultationModeSelector 
+              mode={consultationMode}
+              onModeChange={setConsultationMode}
+            />
+          </div>
+
           {/* CTA Button */}
           <Button
             size="lg"
-            onClick={() => navigate("/consulta")}
-            className="text-lg px-8 py-6 h-auto"
+            onClick={handleQuickConsulta}
+            className="text-lg px-8 py-6 h-auto gap-2"
           >
-            <Stethoscope className="mr-2 h-5 w-5" />
-            Iniciar Nova Consulta
+            <Plus className="h-5 w-5" />
+            Nova Consulta
           </Button>
 
           {/* History Section */}
@@ -105,6 +141,13 @@ const Dashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Patient Reception Modal */}
+      <PatientReceptionModal
+        open={showReceptionModal}
+        onOpenChange={setShowReceptionModal}
+        onDataExtracted={handlePatientDataExtracted}
+      />
     </div>
   );
 };
