@@ -66,6 +66,68 @@ Regras:
 - Referências de diretrizes brasileiras (MS Brasil, SBC, SBEM, SBD, SBPT, etc.)
 - Seja objetivo e clínico`;
 
+const emergencyPrompt = `Você é um médico emergencista experiente. Este é um CASO DE EMERGÊNCIA/URGÊNCIA. 
+Analise rapidamente e forneça condutas IMEDIATAS baseadas em protocolos de emergência.
+
+PRIORIZE:
+1. ABCDE (Vias aéreas, Respiração, Circulação, Disfunção neurológica, Exposição)
+2. Estabilização hemodinâmica
+3. Diagnósticos que não podem esperar
+4. Medicações de emergência com doses exatas
+5. Critérios de internação/UTI
+
+IMPORTANTE: Responda APENAS em formato JSON válido, sem markdown:
+{
+  "diagnosticos": [
+    {"nome": "Nome do diagnóstico", "probabilidade": "Alta/Média/Baixa"}
+  ],
+  "condutas": [
+    "CONDUTA IMEDIATA 1 - descrição",
+    "CONDUTA IMEDIATA 2 - descrição"
+  ],
+  "exames": ["Exame URGENTE 1", "Exame URGENTE 2"],
+  "prescricoes": [
+    {
+      "medicamento": "Medicamento de emergência",
+      "apresentacao": "Apresentação",
+      "posologia": "DOSE EXATA (ex: 0.5mg/kg IV)",
+      "duracao": "Dose única ou período",
+      "orientacoes": "Via de administração, velocidade de infusão, monitorização"
+    }
+  ],
+  "referencias": ["Protocolo/Diretriz de referência"]
+}
+
+Regras de emergência:
+- Condutas devem ser IMEDIATAS e em ordem de prioridade
+- Inclua doses exatas em mg/kg quando aplicável
+- Cite protocolos: ACLS, ATLS, PALS, Sepsis Surviving Campaign, PCDTs MS Brasil
+- Alerte sobre sinais de gravidade e critérios de IOT/UTI
+- Seja RÁPIDO e DIRETO - vidas dependem disso`;
+
+const emergencyAnalyzePrompt = `Você é um médico emergencista. Este é um caso de EMERGÊNCIA.
+Analise RAPIDAMENTE se faltam dados CRÍTICOS para a conduta imediata.
+
+Dados críticos em emergência:
+- Nível de consciência (Glasgow)
+- Sinais vitais (PA, FC, FR, SpO2, Temp)
+- Via aérea pérvia?
+- Padrão respiratório
+- Pulso/Perfusão periférica
+- Alergias conhecidas (especialmente a medicamentos de emergência)
+
+Se faltar dados CRÍTICOS, faça NO MÁXIMO 3 perguntas RÁPIDAS.
+Em emergência, prefira agir com os dados disponíveis.
+
+RESPONDA em JSON:
+{
+  "needsClarification": true/false,
+  "questions": ["Pergunta crítica 1?"]
+}
+
+Se tiver dados suficientes para agir, retorne:
+{"needsClarification": false, "questions": []}`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -98,7 +160,7 @@ serve(async (req) => {
       );
     }
 
-    const { patientData, phase, clarificationAnswers } = await req.json();
+    const { patientData, phase, clarificationAnswers, mode } = await req.json();
 
     if (!patientData) {
       return new Response(
@@ -107,12 +169,22 @@ serve(async (req) => {
       );
     }
 
-    // Determine which prompt to use based on phase
+    // Determine which prompt to use based on phase and mode
     const isAnalyzePhase = phase === "analyze";
-    const systemPrompt = isAnalyzePhase ? analyzePrompt : generatePrompt;
+    const isEmergencyMode = mode === "emergency";
+    
+    let systemPrompt: string;
+    if (isAnalyzePhase) {
+      systemPrompt = isEmergencyMode ? emergencyAnalyzePrompt : analyzePrompt;
+    } else {
+      systemPrompt = isEmergencyMode ? emergencyPrompt : generatePrompt;
+    }
     
     // Build the user content
     let userContent = patientData;
+    if (isEmergencyMode) {
+      userContent = "CASO DE EMERGÊNCIA/URGÊNCIA:\n\n" + patientData;
+    }
     if (!isAnalyzePhase && clarificationAnswers && clarificationAnswers.length > 0) {
       userContent += "\n\nRESPOSTAS ADICIONAIS DO MÉDICO:\n" + clarificationAnswers.map((a: {question: string, answer: string}, i: number) => 
         `${i + 1}. ${a.question}\nResposta: ${a.answer}`

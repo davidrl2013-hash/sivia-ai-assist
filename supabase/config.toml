@@ -1,1 +1,7 @@
 project_id = "xhfekbcgxbzrwdsexryq"
+
+[functions.clinical-suggestions]
+verify_jwt = false
+
+[functions.document-parser]
+verify_jwt = false
