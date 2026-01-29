@@ -160,7 +160,7 @@ serve(async (req) => {
       );
     }
 
-    const { patientData, phase, clarificationAnswers, mode } = await req.json();
+    const { patientData, phase, clarificationAnswers, mode, emergencyPriority } = await req.json();
 
     if (!patientData) {
       return new Response(
@@ -171,7 +171,7 @@ serve(async (req) => {
 
     // Determine which prompt to use based on phase and mode
     const isAnalyzePhase = phase === "analyze";
-    const isEmergencyMode = mode === "emergency";
+    const isEmergencyMode = mode === "emergency" || emergencyPriority === true;
     
     let systemPrompt: string;
     if (isAnalyzePhase) {
@@ -183,7 +183,10 @@ serve(async (req) => {
     // Build the user content
     let userContent = patientData;
     if (isEmergencyMode) {
-      userContent = "CASO DE EMERGÊNCIA/URGÊNCIA:\n\n" + patientData;
+      userContent = "⚠️ CASO DE EMERGÊNCIA/URGÊNCIA - PRIORIDADE MÁXIMA ⚠️\n\n" + patientData;
+      if (emergencyPriority) {
+        userContent += "\n\n[INSTRUÇÃO ESPECIAL: Forneça condutas IMEDIATAS, doses EXATAS de medicamentos, protocolos ACLS/ATLS quando aplicável. Tempo é crítico.]";
+      }
     }
     if (!isAnalyzePhase && clarificationAnswers && clarificationAnswers.length > 0) {
       userContent += "\n\nRESPOSTAS ADICIONAIS DO MÉDICO:\n" + clarificationAnswers.map((a: {question: string, answer: string}, i: number) => 
