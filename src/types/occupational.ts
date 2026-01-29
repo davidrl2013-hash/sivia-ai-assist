@@ -41,6 +41,13 @@ export const complementaryExams = [
   { code: "toxicologico", label: "Exame Toxicológico" },
 ] as const;
 
+// Companies for select dropdown
+export const empresasFixas = [
+  "Interblu",
+  "Salvamed", 
+  "Outra empresa",
+] as const;
+
 // Zod Schema for Occupational Exam Form
 export const occupationalExamSchema = z.object({
   // Company Info
@@ -48,6 +55,7 @@ export const occupationalExamSchema = z.object({
   empresaCnpj: z.string().optional(),
   setor: z.string().min(1, "Setor é obrigatório"),
   funcao: z.string().min(1, "Função é obrigatória"),
+  departamento: z.string().optional(),
   
   // Exam Info
   tipoExame: z.enum(["admissional", "periodico", "demissional", "retorno_trabalho", "mudanca_funcao"]),
@@ -98,9 +106,13 @@ export const occupationalExamSchema = z.object({
   restricoes: z.string().optional(),
   observacoes: z.string().optional(),
   
-  // For return-to-work exams
+  // For return-to-work exams (enhanced for dashboards)
   dataRetornoPrevisto: z.string().optional(),
   documentoINSS: z.string().optional(),
+  
+  // New fields for dashboard analytics
+  cidPrincipal: z.string().optional(),
+  queixaErgonomica: z.string().optional(),
 });
 
 export type OccupationalExamFormData = z.infer<typeof occupationalExamSchema>;

@@ -29,6 +29,7 @@ import {
   nrRisks,
   complementaryExams,
   parecerLabels,
+  empresasFixas,
 } from "@/types/occupational";
 import { useState } from "react";
 import { generateOccupationalPdf } from "@/lib/occupationalPdf";
@@ -70,6 +71,10 @@ export function OccupationalExamForm({ examType, onBack }: OccupationalExamFormP
       afastamentoAnterior: false,
       usaEPI: false,
       parecer: "apto",
+      empresaNome: "",
+      departamento: "",
+      cidPrincipal: "",
+      queixaErgonomica: "",
     },
   });
 
@@ -120,9 +125,20 @@ export function OccupationalExamForm({ examType, onBack }: OccupationalExamFormP
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Nome da Empresa *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Empresa LTDA" {...field} />
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a empresa" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {empresasFixas.map((empresa) => (
+                          <SelectItem key={empresa} value={empresa}>
+                            {empresa}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -141,7 +157,7 @@ export function OccupationalExamForm({ examType, onBack }: OccupationalExamFormP
                 )}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="setor"
@@ -157,10 +173,23 @@ export function OccupationalExamForm({ examType, onBack }: OccupationalExamFormP
               />
               <FormField
                 control={form.control}
+                name="departamento"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Departamento</FormLabel>
+                    <FormControl>
+                      <Input placeholder="RH, TI, Operações..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="funcao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Função *</FormLabel>
+                    <FormLabel>Cargo/Função *</FormLabel>
                     <FormControl>
                       <Input placeholder="Operador, Analista..." {...field} />
                     </FormControl>
@@ -169,6 +198,56 @@ export function OccupationalExamForm({ examType, onBack }: OccupationalExamFormP
                 )}
               />
             </div>
+
+            {/* New fields for dashboard analytics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
+              <FormField
+                control={form.control}
+                name="cidPrincipal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CID Principal (se aplicável)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="M54.5, Z00.0..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {isRetornoTrabalho && (
+                <FormField
+                  control={form.control}
+                  name="diasAfastamento"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dias de Afastamento</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="45" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="queixaErgonomica"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Queixa Principal Ergonômica (NR-17)</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Dor lombar ao final do expediente, desconforto cervical, LER/DORT, tendinite..." 
+                      className="min-h-[60px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 

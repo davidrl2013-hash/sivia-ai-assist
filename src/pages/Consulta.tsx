@@ -99,6 +99,8 @@ const Consulta = () => {
 
   const buildPatientData = () => {
     return `
+MODO DE CONSULTA: ${consultationMode === "emergency" ? "EMERGÊNCIA/URGÊNCIA" : consultationMode === "occupational" ? "MEDICINA OCUPACIONAL" : "CONSULTA NORMAL"}
+
 ANAMNESE E DADOS CLÍNICOS:
 ${anamnese}
 
@@ -128,7 +130,12 @@ INFORMAÇÕES ADICIONAIS:
     try {
       // Phase 1: Analyze for missing data
       const { data: analyzeData, error: analyzeError } = await supabase.functions.invoke("clinical-suggestions", {
-        body: { patientData, phase: "analyze", mode: consultationMode },
+        body: { 
+          patientData, 
+          phase: "analyze", 
+          mode: consultationMode,
+          emergencyPriority: consultationMode === "emergency",
+        },
       });
 
       if (analyzeError) {
@@ -171,6 +178,7 @@ INFORMAÇÕES ADICIONAIS:
           patientData, 
           phase: "generate",
           mode: consultationMode,
+          emergencyPriority: consultationMode === "emergency",
           clarificationAnswers: answers.length > 0 ? answers : undefined,
         },
       });
@@ -391,10 +399,23 @@ INFORMAÇÕES ADICIONAIS:
               onChange={(e) => setAnamnese(e.target.value)}
               placeholder={
                 consultationMode === "emergency" 
-                  ? "Descreva a emergência: queixa principal, sinais vitais, nível de consciência, vias aéreas, respiração, circulação (ABCDE). A IA priorizará condutas imediatas."
+                  ? `EMERGÊNCIA - ESTRUTURE ASSIM:
+
+A - Vias Aéreas: (pérvia/obstruída, IOT?)
+B - Respiração: FR, SpO2, padrão respiratório, ausculta
+C - Circulação: PA, FC, perfusão, pulsos, acesso venoso
+D - Neurológico: Glasgow, pupilas, déficits focais
+E - Exposição: temperatura, lesões visíveis, glicemia
+
+QUEIXA PRINCIPAL: [descreva brevemente]
+SINAIS VITAIS: PA ___/___  FC ___  FR ___  SpO2 ___  Temp ___°C  Glicemia ___
+ALERGIAS: [medicamentos de emergência específicos]
+MEDICAMENTOS EM USO: [anticoagulantes, antiarrítmicos, etc.]
+
+A IA priorizará protocolos ACLS/ATLS e condutas imediatas.`
                   : "Inicie com iniciais e idade do paciente (ex: M.S.L., 61 anos). Depois, cole a anamnese completa, sinais vitais, exame físico, alergias, medicamentos em uso, condições crônicas e outros dados relevantes. A IA extrairá tudo automaticamente."
               }
-              className="min-h-[180px] text-base resize-y"
+              className={`min-h-[180px] text-base resize-y ${consultationMode === "emergency" ? "min-h-[280px]" : ""}`}
               disabled={showClarification}
             />
           </div>
@@ -487,7 +508,12 @@ INFORMAÇÕES ADICIONAIS:
 
           {/* Botão de ação */}
           {!showClarification && (
-            <div className="pt-4">
+            <div className="pt-4 space-y-3">
+              {/* Disclaimer fixo */}
+              <div className="text-xs text-center text-muted-foreground px-4 py-2 bg-muted/50 rounded-md border">
+                <span className="font-medium">⚠️ Sugestões baseadas em IA</span> – sempre valide com evidências clínicas e protocolos oficiais (PCDT MS, SBC, SBD, SBEM, etc.). Uso profissional apenas.
+              </div>
+              
               <Button
                 onClick={handleSubmit}
                 disabled={isLoading}
