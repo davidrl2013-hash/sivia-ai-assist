@@ -20,8 +20,9 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ExtractedDataEditor } from "./ExtractedDataEditor";
 
-interface ExtractedData {
+export interface ExtractedData {
   dadosPaciente?: {
     nome?: string;
     idade?: string;
@@ -183,6 +184,16 @@ export function PatientReceptionModal({
     }
   };
 
+  const handleReprocess = () => {
+    setExtractedData(null);
+    if (uploadedFile) {
+      processDocument();
+    }
+  };
+
+  const handleExtractedDataChange = (newData: ExtractedData) => {
+    setExtractedData(newData);
+  };
   const handleConfirm = () => {
     // Build the anamnese text from all collected data
     let anamneseText = "";
@@ -401,32 +412,23 @@ export function PatientReceptionModal({
                   </Button>
                 )}
 
-                {extractedData && (
-                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-                    <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                      ✓ Dados extraídos com sucesso
-                    </p>
-                    <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
-                      {extractedData.alergias && extractedData.alergias.length > 0 && (
-                        <li>• {extractedData.alergias.length} alergia(s)</li>
-                      )}
-                      {extractedData.medicamentos && extractedData.medicamentos.length > 0 && (
-                        <li>• {extractedData.medicamentos.length} medicamento(s)</li>
-                      )}
-                      {extractedData.condicoessCronicas && extractedData.condicoessCronicas.length > 0 && (
-                        <li>• {extractedData.condicoessCronicas.length} comorbidade(s)</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
               </div>
             )}
           </div>
 
+          {/* Editor de dados extraídos */}
+          {extractedData && (
+            <ExtractedDataEditor
+              data={extractedData}
+              onChange={handleExtractedDataChange}
+              onReprocess={handleReprocess}
+            />
+          )}
+
           {/* Warning */}
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-warning-background border border-warning/30">
-            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-            <p className="text-xs text-warning-foreground">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-700 dark:text-amber-300">
               Os dados importados serão integrados à consulta para análise. Sempre confirme as informações extraídas.
             </p>
           </div>
