@@ -62,6 +62,153 @@ export type Database = {
         }
         Relationships: []
       }
+      occupational_exams: {
+        Row: {
+          afastamento_anterior: boolean | null
+          alergias: string | null
+          altura: number | null
+          antecedentes_patologicos: string | null
+          cid_principal: string | null
+          created_at: string
+          data_exame: string
+          data_nascimento: string | null
+          data_retorno_previsto: string | null
+          departamento: string | null
+          descricao_riscos: string | null
+          dias_afastamento: number | null
+          documento_inss: string | null
+          empresa_cnpj: string | null
+          empresa_nome: string
+          epi_utilizados: string | null
+          exame_clinico: string | null
+          exames_complementares: string[] | null
+          frequencia_cardiaca: string | null
+          funcao: string
+          habitos_vida: string | null
+          historico_ocupacional: string | null
+          id: string
+          idade: number | null
+          imc: number | null
+          medicamentos_uso: string | null
+          motivo_afastamento: string | null
+          observacoes: string | null
+          parecer: Database["public"]["Enums"]["occupational_parecer"]
+          peso: number | null
+          pressao_arterial: string | null
+          queixa_ergonomica: string | null
+          queixas_atuais: string | null
+          restricoes: string | null
+          resultados_exames: string | null
+          riscos_nr: string[] | null
+          setor: string
+          sexo: string | null
+          tempo_empresa: string | null
+          tempo_funcao_atual: string | null
+          tipo_exame: Database["public"]["Enums"]["occupational_exam_type"]
+          trabalhador_cpf: string | null
+          trabalhador_nome: string
+          updated_at: string
+          usa_epi: boolean | null
+          user_id: string
+        }
+        Insert: {
+          afastamento_anterior?: boolean | null
+          alergias?: string | null
+          altura?: number | null
+          antecedentes_patologicos?: string | null
+          cid_principal?: string | null
+          created_at?: string
+          data_exame: string
+          data_nascimento?: string | null
+          data_retorno_previsto?: string | null
+          departamento?: string | null
+          descricao_riscos?: string | null
+          dias_afastamento?: number | null
+          documento_inss?: string | null
+          empresa_cnpj?: string | null
+          empresa_nome: string
+          epi_utilizados?: string | null
+          exame_clinico?: string | null
+          exames_complementares?: string[] | null
+          frequencia_cardiaca?: string | null
+          funcao: string
+          habitos_vida?: string | null
+          historico_ocupacional?: string | null
+          id?: string
+          idade?: number | null
+          imc?: number | null
+          medicamentos_uso?: string | null
+          motivo_afastamento?: string | null
+          observacoes?: string | null
+          parecer: Database["public"]["Enums"]["occupational_parecer"]
+          peso?: number | null
+          pressao_arterial?: string | null
+          queixa_ergonomica?: string | null
+          queixas_atuais?: string | null
+          restricoes?: string | null
+          resultados_exames?: string | null
+          riscos_nr?: string[] | null
+          setor: string
+          sexo?: string | null
+          tempo_empresa?: string | null
+          tempo_funcao_atual?: string | null
+          tipo_exame: Database["public"]["Enums"]["occupational_exam_type"]
+          trabalhador_cpf?: string | null
+          trabalhador_nome: string
+          updated_at?: string
+          usa_epi?: boolean | null
+          user_id: string
+        }
+        Update: {
+          afastamento_anterior?: boolean | null
+          alergias?: string | null
+          altura?: number | null
+          antecedentes_patologicos?: string | null
+          cid_principal?: string | null
+          created_at?: string
+          data_exame?: string
+          data_nascimento?: string | null
+          data_retorno_previsto?: string | null
+          departamento?: string | null
+          descricao_riscos?: string | null
+          dias_afastamento?: number | null
+          documento_inss?: string | null
+          empresa_cnpj?: string | null
+          empresa_nome?: string
+          epi_utilizados?: string | null
+          exame_clinico?: string | null
+          exames_complementares?: string[] | null
+          frequencia_cardiaca?: string | null
+          funcao?: string
+          habitos_vida?: string | null
+          historico_ocupacional?: string | null
+          id?: string
+          idade?: number | null
+          imc?: number | null
+          medicamentos_uso?: string | null
+          motivo_afastamento?: string | null
+          observacoes?: string | null
+          parecer?: Database["public"]["Enums"]["occupational_parecer"]
+          peso?: number | null
+          pressao_arterial?: string | null
+          queixa_ergonomica?: string | null
+          queixas_atuais?: string | null
+          restricoes?: string | null
+          resultados_exames?: string | null
+          riscos_nr?: string[] | null
+          setor?: string
+          sexo?: string | null
+          tempo_empresa?: string | null
+          tempo_funcao_atual?: string | null
+          tipo_exame?: Database["public"]["Enums"]["occupational_exam_type"]
+          trabalhador_cpf?: string | null
+          trabalhador_nome?: string
+          updated_at?: string
+          usa_epi?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -94,7 +241,17 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      occupational_exam_type:
+        | "admissional"
+        | "periodico"
+        | "demissional"
+        | "retorno_trabalho"
+        | "mudanca_funcao"
+      occupational_parecer:
+        | "apto"
+        | "apto_restricao"
+        | "inapto_temporario"
+        | "inapto"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -221,6 +378,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      occupational_exam_type: [
+        "admissional",
+        "periodico",
+        "demissional",
+        "retorno_trabalho",
+        "mudanca_funcao",
+      ],
+      occupational_parecer: [
+        "apto",
+        "apto_restricao",
+        "inapto_temporario",
+        "inapto",
+      ],
+    },
   },
 } as const
